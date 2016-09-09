@@ -1,2 +1,2 @@
 # topaz
-a robust tool for functional annotation of transcriptome
+a robust and efficient tool for large-scale transcripts annotation
