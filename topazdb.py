@@ -82,7 +82,8 @@ CREATE TABLE term (
 CREATE TABLE association (
 	id INTEGER PRIMARY KEY, 
 	term_id INTEGER,
-	gene_product_id INTEGER
+	gene_product_id INTEGER,
+	evidence INTEGER
 );
 CREATE TABLE gene_product (
 	id INTEGER PRIMARY KEY,
@@ -90,13 +91,7 @@ CREATE TABLE gene_product (
 );
 CREATE TABLE dbxref (
 	id INTEGER PRIMARY KEY,
-	xref_dbname TEXT COLLATE NOCASE,
 	xref_key TEXT COLLATE NOCASE
-);
-CREATE TABLE evidence (
-	code TEXT,
-	association_id INTEGER,
-	dbxref_id INTEGER
 );
 CREATE TABLE acc2uniprot (
 	acc TEXT COLLATE NOCASE,
@@ -216,12 +211,12 @@ for line in fp:
 		cur.executemany("INSERT INTO term VALUES (?,?)", rows)
 	
 	if table == 'association':
-		rows = [(int(val[0]), int(val[1]), int(val[2])) for val in vals]
-		cur.executemany("INSERT INTO association VALUES (?,?,?)", rows)
+		rows = [(int(val[0]), int(val[1]), int(val[2]), 0) for val in vals]
+		cur.executemany("INSERT INTO association VALUES (?,?,?,?)", rows)
 
 	elif table == 'dbxref':
-		rows = [(int(val[0]), val[1].strip("'"), val[2].strip("'")) for val in vals]
-		cur.executemany("INSERT INTO dbxref VALUES (?,?,?)", rows)
+		rows = [(int(val[0]), val[2].strip("'")) for val in vals]
+		cur.executemany("INSERT INTO dbxref VALUES (?,?)", rows)
 
 	elif table == 'gene_product':
 		rows = [(int(val[0]), int(val[2])) for val in vals]
@@ -236,8 +231,8 @@ for line in fp:
 	#	cur.executemany("UPDATE gene_product SET synonym=? WHERE id=?", rows)
 
 	elif table == 'evidence':
-		rows = [(evidence_codes[val[1].strip("'")], int(val[2]), int(val[3])) for val in vals]
-		cur.executemany("INSERT INTO evidence VALUES (?,?,?)", rows)
+		rows = [(evidence_codes[val[1].strip("'")], int(val[2])) for val in vals]
+		cur.executemany("UPDATE association SET evidence=? WHERE id=?", rows)
 
 	else:
 		pass
@@ -273,16 +268,11 @@ sql = '''
 CREATE INDEX a1 ON association (gene_product_id);
 CREATE INDEX a2 ON association (id, gene_product_id);
 
-CREATE INDEX e1 ON evidence (association_id);
-CREATE INDEX e2 ON evidence (dbxref_id);
-CREATE INDEX e3 ON evidence (association_id, dbxref_id);
-
 CREATE INDEX g1 ON gene_product (dbxref_id);
 CREATE INDEX g2 ON gene_product (id, dbxref_id);
 
-CREATE INDEX d1 ON dbxref (xref_dbname);
-CREATE INDEX d2 ON dbxref (xref_key);
-CREATE INDEX d3 ON dbxref (xref_key, xref_dbname);
+CREATE INDEX d1 ON dbxref (xref_key);
+CREATE INDEX d2 ON dbxref (id, xref_key);
 
 CREATE INDEX u1 ON acc2uniprot (acc);
 '''
