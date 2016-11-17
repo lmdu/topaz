@@ -3,7 +3,7 @@
 import os
 import sys
 import apsw
-#import config
+import config
 
 class DBConnection:
 	'''
@@ -46,8 +46,11 @@ class SQLiteDB:
 	Control the sqlie3 database including update, insert, select
 	'''
 	#connect to database file
-	#conn = DBConnection(config.dbfile)
-	conn = DBConnection('go-201610.db')
+	conn = None
+
+	def __init__(self)
+		if self.conn is None:
+			self.conn = DBConnection(config.GO_DB)
 
 	def cursor(self):
 		'''
@@ -90,7 +93,7 @@ class SQLiteDB:
 		return the fetched all rows
 		@para sql str, a sql statement
 		@para args tuple, arguments
-		@return a column in feched row 
+		@return first column in feched row
 		'''
 		cursor = self.cursor()
 		try:
@@ -114,8 +117,7 @@ class Mapping(SQLiteDB):
 		@return list, contains many rows
 		'''
 		sql = (
-			"SELECT DISTINCT a.term_id, e.code FROM association AS a"
-			" INNER JOIN evidence AS e ON (e.association_id=a.id)"
+			"SELECT DISTINCT a.term_id, a.evidence FROM association AS a"
 			" INNER JOIN gene_product AS g ON (g.id=a.gene_product_id)"
 			" INNER JOIN dbxref AS d ON (d.id=g.dbxref_id)"
 			" WHERE d.xref_key=?"
@@ -130,8 +132,7 @@ class Mapping(SQLiteDB):
 		@return list, contains many rows
 		'''
 		sql = (
-			"SELECT DISTINCT a.term_id, e.code FROM association AS a"
-			" INNER JOIN evidence AS e ON (e.association_id=a.id)"
+			"SELECT DISTINCT a.term_id, a.evidence FROM association AS a"
 			" INNER JOIN gene_product AS g ON (g.id=a.gene_product_id)"
 			" INNER JOIN dbxref AS d ON (d.id=g.dbxref_id)"
 			" INNER JOIN acc2uniprot AS u ON (u.uniprot=d.xref_key)"
@@ -171,13 +172,5 @@ class Mapping(SQLiteDB):
 
 
 if __name__ == '__main__':
-	DB = Mapping()
-	with open(sys.argv[1]) as fh:
-		fh.readline()
-		for line in fh:
-			cols = line.strip().split('\t')
-			gene = cols[0]
-			acc = cols[2].split()[0].split('|')[-2]
-			terms = DB.getGoTerms(acc)
-			for term in terms:
-				print "%s\t%s\t%s\t%s" % (gene, acc, term[0], term[1])
+	mapper = Mapping()
+	print mapper.getGoTerms('XP_011216275.1')

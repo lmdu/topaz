@@ -12,8 +12,8 @@ CONFIG_FILE = 'topaz.conf'
 if os.path.isfile(os.path.join(APP_DIR, CONFIG_FILE)):
 	cnf = os.path.join(APP_DIR, CONFIG_FILE)
 
-elif os.path.isfile(os.path.join('/etc/topaz', CONFIG_FILE)):
-	cnf = os.path.join('/etc/topaz', CONFIG_FILE)
+elif os.path.isfile(os.path.join('/etc', CONFIG_FILE)):
+	cnf = os.path.join('/etc', CONFIG_FILE)
 
 else:
 	raise Exception("Topaz configure file %s is not exists" % CONFIG_FILE)
@@ -21,7 +21,8 @@ else:
 config = ConfigParser.ConfigParser()
 config.read(cnf)
 
-dbfile = config.get('General', 'DB')
+DB_DIR =  config.get('Database', 'DB_DIR')
+GO_DB = os.path.join(DB_DIR, 'go.db')
 
 if __name__ == '__main__':
-	print config.get('General', 'DB')
+	print config.get('Database', 'DB_DIR')

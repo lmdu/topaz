@@ -3,7 +3,7 @@
 import os
 import time
 import psutil
-
+import subprocess
 
 class FastaUtil:
 	'''
@@ -192,13 +192,13 @@ class Diamond:
 		'''
 		Execute diamond program to start alignment
 		'''
-		proc = psutil.Popen(self.command)
-		proc.wait()
-		if proc.returncode is not 0:
-			raise Exception("** Diamond throw error **")
+		proc = psutil.Popen(self.command, stderr=subprocess.PIPE)
+		stdout, stderr = proc.communicate()
+		if proc.returncode != 0:
+			raise Exception("** Diamond throw error: %s**" % stderr)
 
 
-class DiamondResultRecord(dict):
+class DiamondAlignmentRecord(dict):
 	'''
 	Store diamond result record with 12 columns and convert each
 	column to correct data type
@@ -227,6 +227,9 @@ class DiamondResultRecord(dict):
 	def __getattr__(self, attr):
 		return self[attr]
 
+	def __eq__(self, other):
+		return self.subject == other.subject
+
 
 class DiamondResultParaser:
 	'''
@@ -247,11 +250,23 @@ class DiamondResultParaser:
 	def parser(self):
 		'''
 		A generator for parse each record in diamond output tabular file
+		@return a list contains all alignments for a query
 		'''
+		query = None
+		rows = []
 		with open(self.diamond_output) as fp:
 			for line in fp:
-				yield DiamondResultRecord(line.strip().split())
+				row = DiamondAlignmentRecord(line.strip().split())
+				
+				if row.query != query and rows:
+					yield rows
+					rows = []
+					query = row.query
+				
+				if row not in rows:
+					rows.append(row)
 
+			yield rows
 
 
 if __name__ == '__main__':
