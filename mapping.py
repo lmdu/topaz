@@ -1,115 +1,30 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os
-import sys
-import apsw
 import config
+from db import SQLiteConnection
 
-class DBConnection:
-	'''
-	Check the database file and use apsw to connect and optimize
-	@para dbfile, database file path
-	'''
-	def __init__(self, dbfile):
-		self.dbfile = dbfile
-		
-		#check the database file is exists or not
-		if not os.path.isfile(self.dbfile):
-			raise Exception('Datbase file %s is not exists' % self.dbfile)
-
-		#connect to database file
-		self.conn = apsw.Connection(self.dbfile)
-
-		#optimize the sqlite3 database
-		cursor = self.cursor()
-		cursor.execute("PRAGMA cache_size=8000;")
-		cursor.execute("PRAGMA PAGE_SIZE=4096;")
-		cursor.execute("PRAGMA journal_mode=OFF;")
-		cursor.execute("PRAGMA synchronous=OFF;")
-		cursor.execute("PRAGMA count_changes=OFF;")
-		cursor.execute("PRAGMA temp_store=MEMORY;")
-		cursor.close()
-
-	def __del__(self):
-		self.conn.close()
-
-	def cursor(self):
-		'''
-		create a new cursor for execute sql statements
-		@return sqlite3 cursor
-		'''
-		return self.conn.cursor()
-
-
-class SQLiteDB:
-	'''
-	Control the sqlie3 database including update, insert, select
-	'''
-	#connect to database file
-	conn = None
-
-	def __init__(self)
-		if self.conn is None:
-			self.conn = DBConnection(config.GO_DB)
-
-	def cursor(self):
-		'''
-		create a connection cursor
-		'''
-		return self.conn.cursor()
-
-	def execute(self, sql, *args):
-		'''
-		execute a sql statement with or without arguments
-		@para sql str, a sql statement
-		@para rgs tuple, arguments
-		'''
-		cursor = self.cursor()
-		try:
-			cursor.execute(sql, args)
-		finally:
-			cursor.close()
-
-	def query(self, sql, *args):
-		'''
-		execute a sql statement with or without arguments and
-		return the fetched all rows
-		@para str, a sql statement
-		@para args tuple, arguments
-		@return list, all rows fetched
-		'''
-		cursor = self.cursor()
-		try:
-			cursor.execute(sql, args)
-			rows = cursor.fetchall()
-		finally:
-			cursor.close()
-
-		return rows
-
-	def get(self, sql, *args):
-		'''
-		execute a sql statement with or without arguments and
-		return the fetched all rows
-		@para sql str, a sql statement
-		@para args tuple, arguments
-		@return first column in feched row
-		'''
-		cursor = self.cursor()
-		try:
-			cursor.execute(sql, args)
-			row = cursor.fetchone()
-		finally:
-			cursor.close()
-
-		return row[0] if row else None
-
-
-class Mapping(SQLiteDB):
+class GOTermAssignment:
 	'''
 	Get go terms and annotation evidence for a gene by using dbxref key in
 	go association database, or using NCBI, Ensembl etc. accession number
 	'''
+	_db = None
+	_terms = None
+	
+	@property
+	def db(self):
+		'''
+		check sqlite is connected or not and if not connect
+		'''
+		if self._db is None:
+			self._db = SQLiteConnection(config.GO_DB)
+		return self._db
+
+	def term(self, _id):
+		if self._terms is None:
+			self._terms = {_id: acc for _id, acc in self.db.query("SELECT * FROM term")}
+		return self._terms[_id]
+
 	def getGoByXrefKey(self, xref_key):
 		'''
 		Get go terms by using dbxref key in go association database
@@ -123,23 +38,7 @@ class Mapping(SQLiteDB):
 			" WHERE d.xref_key=?"
 		)
 
-		return self.query(sql, xref_key)
-
-	def getGoByAccession(self, acc):
-		'''
-		Get go terms by using NCBI or other database accession number
-		@para acc str, accession number maybe from NCBI
-		@return list, contains many rows
-		'''
-		sql = (
-			"SELECT DISTINCT a.term_id, a.evidence FROM association AS a"
-			" INNER JOIN gene_product AS g ON (g.id=a.gene_product_id)"
-			" INNER JOIN dbxref AS d ON (d.id=g.dbxref_id)"
-			" INNER JOIN acc2uniprot AS u ON (u.uniprot=d.xref_key)"
-			" WHERE u.acc=?"
-		)
-
-		return self.query(sql, acc)
+		return [(self.term(i), e) for i, e in self.db.query(sql, xref_key)]
 
 	def convertAccessionToUniprot(self, acc):
 		'''
@@ -148,7 +47,7 @@ class Mapping(SQLiteDB):
 		@return str if accession is exists in database or None
 		'''
 		sql = "SELECT uniprot FROM acc2uniprot WHERE acc=? LIMIT 1"
-		return self.get(sql, acc)
+		return self.db.get(sql, acc)
 
 
 	def getGoTerms(self, acc):
@@ -172,5 +71,5 @@ class Mapping(SQLiteDB):
 
 
 if __name__ == '__main__':
-	mapper = Mapping()
+	mapper = GOTermAssignment()
 	print mapper.getGoTerms('XP_011216275.1')

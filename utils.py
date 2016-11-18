@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+
 #GO annotation evidence code and the custom ID
 evidence_codes = [
 	#(code, ID, rank)

@@ -1,27 +1,35 @@
 #!/usr/bin/evn python
 # -*- coding: utf-8 -*-
-from mapping import Mapping
-from diamond import DiamondResultParaser
+from mapping import GOTermAssignment
+from alignment import BlastTabularParaser
 
 
-class Annotation:
+class GoAnnotation:
 	'''
 	Assign GO terms to query sequence by subject accession number
 	and output to annotation file
-	@para diamond_output, diamond output file with tab format
-	@para annotate_output, GO term annotation output file 
+	@para align_out, diamond output file with tab format
+	@para annotate_out, GO term annotation output file 
 	'''
-	def __init__(self, diamond_output, annotate_output):
-		self.diamond_output = diamond_output
-		self.annotate_output = annotate_output
+	mapping = None
 
-		#create a mapping instance
-		self.mapper = Mapping()
+	def __init__(self, align_out, annotate_out):
+		self.align_out = align_out
+		self.annotate_out = annotate_out
+
+		if self.mapping is None
+			self.mapping = GOTermAssignment()
 
 	def annotate(self):
-		for alignments in DiamondResultParaser(self.diamond_output):
-			query = alignments[0].query
+		op = open(self.annotate_out, 'w')
+		for alignments in BlastTabularParaser(self.align_out):
+			terms = []
 			for alignment in alignments:
+				terms.extend(self.mapping.getGoTerms(alignment.subject))
+			op.write("%s\t%s\n" % (alignment.query, "\t".join(terms)))
+		op.close()
+
+
 				
 
 

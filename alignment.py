@@ -198,7 +198,7 @@ class Diamond:
 			raise Exception("** Diamond throw error: %s**" % stderr)
 
 
-class DiamondAlignmentRecord(dict):
+class AlignmentRecord(dict):
 	'''
 	Store diamond result record with 12 columns and convert each
 	column to correct data type
@@ -231,17 +231,17 @@ class DiamondAlignmentRecord(dict):
 		return self.subject == other.subject
 
 
-class DiamondResultParaser:
+class BlastTabularParaser:
 	'''
-	Diamond output result file parser
-	@para diamond_output, diamond output tabular file with 12 columns
+	Blast tabular output format parser, blast -outfmt 6
+	@para tabular, diamond or blast output tabular file with 12 columns
 	'''
-	def __init__(self, diamond_output):
-		self.diamond_output = diamond_output
-		if not os.path.isfile(self.diamond_output):
+	def __init__(self, tabular):
+		self.tabular = tabular
+		if not os.path.isfile(self.tabular):
 			raise Exception("** No diamond output file exists **")
 
-		if not os.path.getsize(self.diamond_output):
+		if not os.path.getsize(self.tabular):
 			raise Exception("** No diamond output or no sequence align to database **")
 
 	def __iter__(self):
@@ -254,9 +254,9 @@ class DiamondResultParaser:
 		'''
 		query = None
 		rows = []
-		with open(self.diamond_output) as fp:
+		with open(self.tabular) as fp:
 			for line in fp:
-				row = DiamondAlignmentRecord(line.strip().split())
+				row = AlignmentRecord(line.strip().split())
 				
 				if row.query != query and rows:
 					yield rows
