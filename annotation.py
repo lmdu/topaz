@@ -20,6 +20,8 @@ class GoAnnotation:
 		if self.mapping is None
 			self.mapping = GOTermAssignment()
 
+		self.annotate()
+
 	def annotate(self):
 		op = open(self.annotate_out, 'w')
 		for alignments in BlastTabularParaser(self.align_out):
@@ -28,9 +30,6 @@ class GoAnnotation:
 				terms.extend(self.mapping.getGoTerms(alignment.subject))
 			op.write("%s\t%s\n" % (alignment.query, "\t".join(terms)))
 		op.close()
-
-
-				
 
 
 		
