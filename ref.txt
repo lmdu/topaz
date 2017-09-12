@@ -1,0 +1,8 @@
+https://trinotate.github.io/
+https://www.blast2go.com/
+https://github.com/frankMusacchia/Annocript
+http://bioinformatics.psb.ugent.be/webtools/trapid/
+http://www-labgtp.na.icar.cnr.it/Transcriptator/
+http://www.nematodes.org/bioinformatics/annot8r/
+http://www.ikmb.uni-kiel.de/resources/download-tools/software/t-ace
+https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-5-178
