@@ -1,121 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
+import sh
 import time
-import psutil
-import subprocess
 
-class FastaUtil:
-	'''
-	Accept a fasta file and check the fasta and calculate the total,
-	N50, mean, median length and number of sequences
-	@para fasta, the path of the input fasta file
-	'''
-	def __init__(self, fasta):
-		self.fasta = fasta
+#Diamond aligner
+diamond = sh.Command('diamond').bake(_long_sep=' ')
 
-		if not os.path.isfile(self.fasta):
-			raise Exception(" ** Please provide right query FASTA file **")
-
-		if not self.isFasta():
-			raise Exception(" ** The input file is not fasta format file **")
-
-		self.lengths = []
-		self.gc = 0
-
-
-	def isFasta(self):
-		'''
-		Get first fasta record header and check > to verify fasta format
-		@return bool, True if is right fasta or False
-		'''
-		with open(self.fasta) as fh:
-			if fh.readline()[0] == '>':
-				return True
-
-		return False
-
-	def getSeqCounts(self):
-		'''
-		Get total number of sequences in the query fasta file
-		@return int, no. of sequences
-		'''
-		if self.lengths:
-			return len(self.lengths)
-
-		with open(self.fasta) as fh:
-			return sum(1 for line in fh if line[0] == '>')
-
-	def getSeqLengths(self):
-		'''
-		Get the lengths of all sequences and GC counts in fasta
-		@return list, contains lengths of all sequneces
-		'''
-		if self.lengths:
-			return self.lengths
-
-		contig = 0
-		with open(self.fasta) as fh:
-			for line in fh:
-				line = line.strip()
-				
-				if not line:
-					continue
-
-				if line[0] == '>':
-					if contig:
-						self.lengths.append(contig)
-					
-					contig = 0
-
-				else:
-					contig += len(line)
-					self.gc += line.upper().count('G')
-					self.gc += line.upper().count('c')
-			else:
-				self.lengths.append(contig)
-
-		return self.lengths
-
-	def getSeqTotalLength(self):
-		'''
-		Get total length of all sequences in fasta
-		return int, bp
-		'''
-		return sum(self.getSeqLengths())
-
-	def getSeqGCContent(self):
-		'''
-		Get the GC content of sequences in fasta
-		@return float, GC content
-		'''
-		total = float(self.getSeqTotalLength())
-		return round(self.gc/total*100, 2)
-
-	def getSeqAverageLength(self):
-		'''
-		Get the average length of the sequences in fasta
-		@return int, average length
-		'''
-		total = float(self.getSeqTotalLength())
-		return int(round(total/self.getSeqCounts()))
-
-	def getSeqAssessVal(self, percent=0.5):
-		'''
-		Get transcripts assembly assessment value N10, N50, N90
-		@para percent float, a percentage value
-		@return int, a transcript length
-		'''
-		lengths = self.getSeqLengths()
-		lengths.sort(reverse=True)
-
-		cutoff = self.getSeqTotalLength() * percent
-		accumulate = 0
-		
-		for length in lengths:
-			accumulate += length
-			if accumulate >= cutoff:
-				return length
+#blast aligner
+blastx = sh.Command('blastx').bake(_long_prefix='-', _long_sep=' ') 
+blastp = sh.Command('blastp').bake(_long_prefix='-', _long_sep=' ')
 
 
 class Diamond:
