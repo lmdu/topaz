@@ -5,20 +5,15 @@ import sh
 import time
 
 #Diamond aligner
-diamond = sh.Command('diamond').bake(_long_sep=' ')
+_diamond = sh.Command('diamond').bake(_long_sep=' ')
 
 #blast aligner
-blastx = sh.Command('blastx').bake(_long_prefix='-', _long_sep=' ') 
-blastp = sh.Command('blastp').bake(_long_prefix='-', _long_sep=' ')
+_blastx = sh.Command('blastx').bake(_long_prefix='-', _long_sep=' ')
+_blastp = sh.Command('blastp').bake(_long_prefix='-', _long_sep=' ')
 
 
-class Diamond:
-	'''
-	invoke diamond program to align sequences to NR, SWISS-PROT etc. protein database
-	diamond is a alternative program to blast for protein alignment
-	'''
-	def __init__(self, query, out, db='nr', threads=1, evalue=1e-5, cover=None, 
-		sensitive=False, _type='dna', targets=20, outfmt=6):
+def diamond(query, out, db='nr', threads=1, evalue=1e-5, cover=None, 
+		sensitive=False, seqtype='dna', targets=20, outfmt=6):
 		'''
 		@para query, input FASTA file with multiple sequences
 		@para out, diamond out file name
@@ -32,64 +27,7 @@ class Diamond:
 		@para outfmt, output format 5: blast xml, 6: tabular, 101: SAM
 		'''
 		#parameters that required
-		self.query = query
-		self.out = out
-		self.db = db
-		self.type = _type
-		self.threads = threads
-		self.evalue = evalue
-		self.targets = targets
-		self.cover = cover
-		self.outfmt = outfmt
-		self.sensitive = sensitive
-
-		#start the alignment task
-		self._execute()
-
-	@property
-	def command(self):
-		'''
-		Generate command list with options
-		'''
-		cmd = ['diamond']
-
-		if self.type == 'dna':
-			cmd.append('blastx')
-
-		else:
-			cmd.append('blastp')
-
-		cmd.extend([
-			'--query', self.query,
-			'--out', self.out,
-			'--db', self.db,
-			'--threads', str(self.threads),
-			'--evalue', str(self.evalue),
-			'--max-target-seqs', str(self.targets),
-			'--outfmt', str(self.outfmt)
-		])
-
-		#open more sensitive alignment mode, default sensitive mode
-		if self.sensitive:
-			cmd.append('--more-sensitive')
-
-		else:
-			cmd.append('--sensitive')
-
-		#set query cover
-		if self.cover is not None:
-			cmd.extend(['--query-cover', self.cover])
-
-		return cmd
-
-	def _execute(self):
-		'''
-		Execute diamond program to start alignment
-		'''
-		proc = psutil.Popen(self.command, stderr=subprocess.PIPE)
-		stdout, stderr = proc.communicate()
-		if proc.returncode != 0:
-			raise Exception("** Diamond throw error: %s**" % stderr)
+	
 
 
 class AlignmentRecord(dict):
