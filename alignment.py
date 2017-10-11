@@ -4,12 +4,36 @@ import os
 import sh
 import time
 
-#Diamond aligner
-_diamond = sh.Command('diamond').bake(_long_sep=' ')
+from toolkit import *
 
-#blast aligner
-_blastx = sh.Command('blastx').bake(_long_prefix='-', _long_sep=' ')
-_blastp = sh.Command('blastp').bake(_long_prefix='-', _long_sep=' ')
+
+class Aligner:
+	'''
+	@para query, input FASTA file with multiple sequences
+	@para out, diamond out file name
+	@para db, protein databases
+	@para threads, number of threads for diamond
+	@para evalue, expected value 1e-5
+	@para cover, percentage of query cover
+	@para sensitive, if True open more sensitive alignment mode
+	@para _type, the query sequence type dna or protein
+	@para targets, output max target seqs
+	@para outfmt, output format 5: blast xml, 6: tabular, 101: SAM
+	'''
+	def __init__(self, query, outfile, db='nr', threads=1, evalue=1e-5, sensitive=False,
+				seqtype='dna'):
+		pass
+
+class Diamond(Aligner):
+	def __init__(self):
+		pass
+
+class Blast(Aligner):
+	def __init__(self):
+		pass
+
+
+
 
 
 def diamond(query, out, db='nr', threads=1, evalue=1e-5, cover=None, 
