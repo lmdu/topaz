@@ -4,8 +4,20 @@ import os
 import sh
 import time
 
-from toolkit import *
+from command import *
 
+class AlignDNASequence:
+	'''
+	@para aligner, 
+	@para query, 
+	'''
+	def __init__(self):
+		pass
+
+class AlignProteinSequence:
+	def __init__(self):
+		pass
+		
 
 class Aligner:
 	'''
