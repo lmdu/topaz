@@ -2,23 +2,12 @@
 # -*- coding: utf-8 -*-
 import os
 import sh
+import attr
 import time
 
 from command import *
 
-class AlignDNASequence:
-	'''
-	@para aligner, 
-	@para query, 
-	'''
-	def __init__(self):
-		pass
-
-class AlignProteinSequence:
-	def __init__(self):
-		pass
-		
-
+@attr.s
 class Aligner:
 	'''
 	@para query, input FASTA file with multiple sequences
@@ -32,6 +21,13 @@ class Aligner:
 	@para targets, output max target seqs
 	@para outfmt, output format 5: blast xml, 6: tabular, 101: SAM
 	'''
+	query = attr.ib()
+	outdir = attr.ib()
+	db = attr.ib(default='nr')
+	threads 
+
+
+
 	def __init__(self, query, outfile, db='nr', threads=1, evalue=1e-5, sensitive=False,
 				seqtype='dna'):
 		pass
