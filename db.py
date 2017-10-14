@@ -1,7 +1,47 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
-import apsw
+import attr
+import sqlite3
+
+@attr.s
+class GODatabase(object):
+	'''
+	Gene ontology association annotation database
+	@dbfile, database file path
+	'''
+	dbfile = attr.ib()
+	conn = attr.ib(init=False)
+	cursor = attr.ib(init=False)
+
+	@dbfile.validator
+	def check_db_file(self):
+		if not os.path.isfile(self.dbfile):
+			raise Exception('Datbase file %s is not exists' % self.dbfile)
+
+	@conn.default
+	def connect_to_db(self):
+		return sqlite3.connect(self.dbfile)
+
+	@cursor.default
+	def get_cursor(self):
+		return self.conn.cursor()
+
+	def __del__(self):
+		self.cursor.close()
+		self.conn.close()
+
+	def submit(self):
+		self.conn.commit()
+
+	def iter(self, sql):
+		for row in self.cursor.execute(sql):
+			yield row
+
+	def gets(self, sql):
+		self.cursor.execute(sql)
+		return self.cursor.fetchall()
+
 
 class SQLiteConnection:
 	'''
@@ -10,8 +50,7 @@ class SQLiteConnection:
 	'''
 	def __init__(self, dbfile):
 		#check the database file is exists or not
-		if not os.path.isfile(dbfile):
-			raise Exception('Datbase file %s is not exists' % dbfile)
+		
 		
 		#connect to database file
 		self.conn = apsw.Connection(dbfile)

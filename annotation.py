@@ -1,7 +1,28 @@
 #!/usr/bin/evn python
 # -*- coding: utf-8 -*-
-from mapping import GOTermAssignment
-from alignment import BlastTabularParaser
+import attr
+
+@attr.s
+class Annotator(object):
+	pass
+
+@attr.s
+class Blast2goAnnotator(Annotator):
+	'''
+	Implementation of Blast2go annotation method
+	'''
+	pass
+
+
+
+@attr.s
+class GotchaAnnotator(Annotator):
+	'''
+	Implementation of Gotcha annotation method
+	'''
+	pass
+
+
 
 
 class GoAnnotation:
