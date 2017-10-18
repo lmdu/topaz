@@ -54,17 +54,15 @@ class GOTermMapper:
 		@return list, contains many rows
 		'''
 		#first, directly search accession in dbxref database 
-		terms = self.getGoByXrefKey(acc)
-		if terms:
-			return terms
+		terms = self.get_go_terms_by_xrefkey(acc)
+		if terms: return terms
 
 		#second, if accession not in dbxref, convert accession to uniprot
-		uniprot = self.convertAccessionToUniprot(acc)
-		if uniprot is None:
-			return []
+		uniprot = self.covert_acc_to_uniprot(acc)
+		if not uniprot: return []
 
 		#use the uniprot accession to search dbxref database
-		return self.getGoByXrefKey(uniprot)
+		return self.get_go_terms_by_xrefkey(uniprot)
 
 
 if __name__ == '__main__':

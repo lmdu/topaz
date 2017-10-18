@@ -1,10 +1,35 @@
 #!/usr/bin/evn python
 # -*- coding: utf-8 -*-
+import os
 import attr
+
+from mapping import GOTermMapper
 
 @attr.s
 class Annotator(object):
-	pass
+	'''
+	Gene ontology annotation according to alignment file and
+	extract go terms for gene from go association database
+	'''
+	alignment_file = attr.ib()
+	go_mapper = attr.ib(init=False)
+
+	@alignment_file.validator
+	def check_alignment_file(self):
+		if not os.path.exists(self.alignment_file):
+			raise Exception("** Alignment file %s is not exists**" % self.alignment_file)
+
+	@go_mapper.default
+	def get_go_mapping(self):
+		return GOTermMapper()
+
+	def get_go_terms(self, acc):
+		'''
+		extract GO terms for associated gene by similary accession
+		@acc, accession number of gene
+		'''
+		return self.go_mapper.get_go_terms_by_acc(acc)
+
 
 @attr.s
 class Blast2goAnnotator(Annotator):
