@@ -34,9 +34,13 @@ class GODatabase(object):
 	def submit(self):
 		self.conn.commit()
 
-	def iter(self, sql):
-		for row in self.cursor.execute(sql):
+	def iter(self, sql, args=None):
+		for row in self.cursor.execute(sql, args):
 			yield row
+
+	def get(self, sql, args=None):
+		for row in self.cursor.execute(sql, args):
+			return row[0]
 
 	def gets(self, sql):
 		self.cursor.execute(sql)

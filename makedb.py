@@ -82,8 +82,7 @@ CREATE TABLE term (
 CREATE TABLE association (
 	id INTEGER PRIMARY KEY, 
 	term_id INTEGER,
-	gene_product_id INTEGER,
-	evidence INTEGER
+	gene_product_id INTEGER
 );
 CREATE TABLE gene_product (
 	id INTEGER PRIMARY KEY,
@@ -93,6 +92,11 @@ CREATE TABLE dbxref (
 	id INTEGER PRIMARY KEY,
 	xref_key TEXT COLLATE NOCASE
 );
+CREATE TABLE evidence(
+	code TEXT,
+	association_id INTEGER,
+	dbxref_id INTEGER
+)
 CREATE TABLE acc2uniprot (
 	acc TEXT COLLATE NOCASE,
 	uniprot TEXT
