@@ -1,203 +1,175 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 import os
+import attr
 
-class sdict(dict):
-	def __getattr__(self, attr):
-		return self.get(attr, None)
-
-	def __missing__(self, attr):
-		return None
-
-	def __setattr__(self, attr, value):
-		self[attr] = value
-
-
-class Term(sdict):
+@attr.s
+class Term(object):
 	'''
 	GO term, contain properties of term in obo file.
-	@prop ID, identifier GO:0052715
-	@prop name, functional description
-	@prop ontology, gene ontology 3 classify BP, CC or MF
-	@prop parents, parent terms
-	@prop level, shortest distance from root node
-	@prop depth, longest distance from root node
-	@prop obsolete, the is or not obsolete
-	@prop alters, alternative identifiers
+	@para ID, identifier GO:0052715
+	@para name, functional description
+	@para namespace, gene ontology 3 classify BP, CC or MF
+	@para obsolete, the is or not obsolete
 	'''
-	def add_child(self, child):
-		'''
-		Add child to term children set
-		@para child, GO term id e.g. GO:0052715
-		'''
-		if 'children' not in self:
-			self.children = set()
-
-		self.children.add(child)
-
-	def add_parent(self, parent):
-		'''
-		Add parent to term parents set
-		@para parent, GO term id e.g. GO:0052715
-		'''
-		if 'parents' not in self:
-			self.parents = set()
-		
-		self.parents.add(parent)
-
-	def add_alter_id(self, _id):
-		'''
-		Add alternative identifiers to go term
-		@para _id, alternative identifier GO:0052715
-		'''
-		if 'alters' not in self:
-			self.alters = set()
-
-		self.alters.add(_id)
-
-
-class GO(sdict):
-	'''
-	Gene ontology structure tree with go term node
-	'''
-	def __iter__(self):
-		return self.itervalues()
-
-	def _calc_layer(self):
-		'''
-		Calculate the number of layers in hierarchy for each GO term
-		'''
-		def _calc_level(term):
-			'''
-			Calculate the shortest distance from root in GO hierarchy
-			@para term, a term class object
-			@return int, term level
-			'''
-			if term.level is None:
-				if not term.parents:
-					term.level = 1
-				else:
-					term.level = min(_calc_level(self[parent]) for parent in term.parents) + 1
-
-			return term.level
-
-		def _calc_depth(term):
-			'''
-			Calulate the longest distance from root in GO hierarchy
-			@para term, a term class object
-			@return int, term depth
-			'''
-			if term.depth is None:
-				if not term.parents:
-					term.depth = 1
-				else:
-					term.depth = max(_calc_depth(self[parent]) for parent in term.parents) + 1
-
-			return term.depth
-
-		for term in self:
-			_calc_level(term)
-			_calc_depth(term)
-
-
-	def _calc_children(self):
-		'''
-		Add child to parent children set for each GO term
-		'''
-		for term in self:
-			if term.parents is None:
-				continue
-
-			for parent in term.parents:
-				self[parent].add_child(term.ID)
-
-	def complete(self):
-		'''
-		Execute calculating level and depth of term
-		put the child to term children set
-		'''
-		self._calc_children()
-		self._calc_layer()
-
-
-def obo_parser(obo_handler):
-	'''
-	A generator for extracting each go terms with property
-	information from obo file.
-	@para obo_handler, open obo file handler
-	'''
-	namespaces = {'cellular_component': 'CC', 'biological_process': 'BP', 'molecular_function': 'MF'}
+	ID = attr.ib(init=False)
+	name = attr.ib(init=False)
+	namespace = attr.ib(init=False)
+	obsolete = attr.ib(default=False, init=False)
+	alters = attr.ib(default=attr.Factory(set), init=False)
+	parents = attr.ib(default=attr.Factory(set), init=False)
 	
-	term = None
+	#level, shortest distance from root node
+	level = attr.ib(default=None, init=False)
+	
+	#prop depth, longest distance from root node
+	depth = attr.ib(default=None, init=False)
 
-	for line in obo_handler:
-		#[Typedef] means last term
-		if line.strip().lower() == '[typedef]':
-			yield term
-			break
+@attr.s
+class GOTerms(object):
+	terms = attr.ib(default=attr.Factory(dict), init=False)
 
-		#When [Term] line, check previous term is or not exists
-		if line.strip().lower() == '[term]':
-			if term:
-				yield term
-			
-			#new term started, create a term object
-			term = Term()
-			continue
+	def add_term(self, term):
+		self.terms[term.ID] = term
 
-		#parse the term information with field and value and we need
-		#id, name, namespace, parents, obsolete and alternative identifier
-		if ': ' in line:
-			field, value = line.strip().split(': ')[0:2]
-			if field == 'id':
-				term.ID = value
+	def get_term(self, term_id):
+		return self.terms[term_id]
 
-			elif field == 'name':
-				term.name = value
+	def __iter__(self):
+		for term_id in self.terms:
+			yield self.get_term(term_id)
 
-			#replace namespace to abbreviation MF, BP, CC
-			elif field == 'namespace':
-				term.ontology = namespaces[value]
+	def __len__(self):
+		return len(self.terms)
 
-			#A is_a B meas B is one of parents of A
-			elif field == 'is_a':
-				term.add_parent(value.split()[0])
+	def __contains__(self, item):
+		return item in self.terms
 
-			#check the term is obsolete or not
-			elif field == 'is_obsolete':
-				if value == 'true':
-					term.obsolete = True
-
-			#alternative identifiers of term
-			elif field == 'alt_id':
-				term.add_alter_id(value)
-
+	def calc_term_level(self, term_id):
+		'''
+		Calculate the shortest distance from root in GO hierarchy
+		@para term_id, a term id
+		@return int, term level
+		'''
+		term = self.get_term(term_id)
+		if term.level is None:
+			if not term.parents:
+				term.level = 1
 			else:
-				pass
+				term.level = min(self.calc_term_level(parent) for parent in term.parents) + 1
 
-def get_go_terms(obo_file="go-basic.obo"):
-	'''
-	parse the GO obo file and extracted all the GO terms
-	@para obo_file, GO obo file path
-	@return dict, contains all GO terms
-	'''
-	if not os.path.isfile(obo_file):
-		raise Exception(
-			"** Please provide go-basic.obo file **\n"
-			"go-basic.obo file can be downloaded from gene ontology website.\n"
-			"http://geneontology.org/page/download-ontology"
-		)
+		return term.level
 
-	terms = GO()
-	with open(obo_file) as obo:
-		for term in obo_parser(obo):
-			terms[term.ID] = term
+	def calc_term_depth(self, term_id):
+		'''
+		Calulate the longest distance from root in GO hierarchy
+		@para term_id, a term id
+		@return int, term depth
+		'''
 
-	terms.complete()
-	return terms
+		term = self.get_term(term_id)
+
+		if term.depth is None:
+			if not term.parents:
+				term.depth = 1
+			else:
+				term.depth = max(self.calc_term_depth(parent) for parent in term.parents) + 1
+
+		return term.depth
+
+	def calc_layers(self):
+		for term_id in self.terms:
+			self.calc_term_depth(term_id)
+			self.calc_term_level(term_id)
+
+
+@attr.s
+class OBOParser(object):
+	obo_file = attr.ib()
+	obo_fh = attr.ib(init=False)
+	
+	@obo_file.validator
+	def check_obo_file(self, attr, value):
+		if not os.path.isfile(value):
+			raise Exception(
+				"** Please provide go-basic.obo file **\n"
+				"go-basic.obo file can be downloaded from gene ontology website.\n"
+				"http://geneontology.org/page/download-ontology"
+			)
+
+	@obo_fh.default
+	def open_obo_file(self):
+		'''
+		open obo file and read to [Term]
+		'''
+		fh = open(self.obo_file)
+		for line in fh:
+			if line.startswith('[Term]'):
+				break
+		return fh
+
+	def __del__(self):
+		if self.obo_fh:
+			self.obo_fh.close()
+
+	def __iter__(self):
+		return self
+
+	def get_category(self, namespace):
+		categories = {
+			'cellular_component': 'CC',
+			'biological_process': 'BP',
+			'molecular_function': 'MF',
+			'external': None
+		}
+
+		return categories[namespace]
+
+	def next(self):
+		term = Term()
+		for line in self.obo_fh:
+
+			line = line.strip()
+			#[Typedef] means last term
+			if line == '[Typedef]':
+				self.obo_fh.seek(0, 2)
+				return term
+
+			#When [Term] line, check previous term is or not exists
+			if line == '[Term]':
+				return term
+
+			#parse the term information with field and value and we need
+			#id, name, namespace, parents, obsolete and alternative identifier
+			if line[0:3] == 'id:':
+				term.ID = line[4:]
+
+			elif line[0:5] == 'name:':
+				term.name = line[6:]
+
+			elif line[0:10] == 'namespace:':
+				term.namespace = self.get_category(line[11:])
+
+			elif line[0:5] == 'is_a:':
+				term.parents.add(line[6:16])
+
+			elif line[0:12] == 'is_obsolete:':
+				term.obsolete = True
+
+			elif line[0:7] == 'alt_id:':
+				term.alters.add(line[8:])
+
+		raise StopIteration
+
 
 if __name__ == '__main__':
-	terms = get_go_terms()
-	print sum(1 for term in terms if term.level==3 and not term.obsolete)
-		
+	obofile = r'D:\research\topaz\go-basic.obo'
+	terms = GOTerms()
+	for term in OBOParser(obofile):
+		terms.add_term(term)
+	
+	terms.calc_layers()
+
+	for term in terms:
+		if term.level == 2 and not term.obsolete:
+			print "%s\t%s" % (term.ID, term.name)

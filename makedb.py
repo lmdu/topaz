@@ -63,15 +63,15 @@ conn = apsw.Connection(options.o)
 cur = conn.cursor()
 
 #optimize sqlite3 database speed
-cur.execute("PRAGMA cache_size=8000")
-cur.execute("PRAGMA PAGE_SIZE=4096")
-cur.execute("PRAGMA journal_mode=OFF")
+#cur.execute("PRAGMA cache_size=8000")
+#cur.execute("PRAGMA PAGE_SIZE=4096")
+#cur.execute("PRAGMA journal_mode=OFF")
 cur.execute("PRAGMA synchronous=OFF")
-cur.execute("PRAGMA count_changes=OFF")
-cur.execute("PRAGMA temp_store=MEMORY")
+#cur.execute("PRAGMA count_changes=OFF")
+#cur.execute("PRAGMA temp_store=MEMORY")
 
 #open transaction mode
-cur.execute("BEGIN TRANSACTION;")
+cur.execute("BEGIN;")
 
 #create tables
 sql = '''
@@ -82,7 +82,8 @@ CREATE TABLE term (
 CREATE TABLE association (
 	id INTEGER PRIMARY KEY, 
 	term_id INTEGER,
-	gene_product_id INTEGER
+	gene_product_id INTEGER,
+	evidence TEXT
 );
 CREATE TABLE gene_product (
 	id INTEGER PRIMARY KEY,
@@ -92,11 +93,6 @@ CREATE TABLE dbxref (
 	id INTEGER PRIMARY KEY,
 	xref_key TEXT COLLATE NOCASE
 );
-CREATE TABLE evidence(
-	code TEXT,
-	association_id INTEGER,
-	dbxref_id INTEGER
-)
 CREATE TABLE acc2uniprot (
 	acc TEXT COLLATE NOCASE,
 	uniprot TEXT
@@ -238,13 +234,14 @@ for line in fp:
 		rows = [(evidence_codes[val[1].strip("'")], int(val[2])) for val in vals]
 		cur.executemany("UPDATE association SET evidence=? WHERE id=?", rows)
 
-	else:
-		pass
+	#else:
+	#	pass
 
-	print "INSERT INTO %s %s rows" % (table, len(rows))
+	#print "INSERT INTO %s %s rows" % (table, len(rows))
 
 fp.close()
 
+print "STEP 2"
 
 #Parse uniprot idmapping file
 ID_types = set(['GI', 'NCBI_TaxID', 'GeneID', 'UniRef100', 'UniRef90', 'UniRef50', 'Gene_ORFName', 'UniProtKB-ID'])
@@ -282,6 +279,8 @@ CREATE INDEX u1 ON acc2uniprot (acc);
 '''
 cur.execute(sql)
 
+
+print "STEP 3"
 
 #Check PIR idmapping file
 def has_acc(acc):
