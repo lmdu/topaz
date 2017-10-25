@@ -26,7 +26,7 @@ class Term(object):
 	depth = attr.ib(default=None, init=False)
 
 @attr.s
-class GOTerms(object):
+class DAG(object):
 	terms = attr.ib(default=attr.Factory(dict), init=False)
 
 	def add_term(self, term):
@@ -164,12 +164,12 @@ class OBOParser(object):
 
 if __name__ == '__main__':
 	obofile = r'D:\research\topaz\go-basic.obo'
-	terms = GOTerms()
+	dag = DAG()
 	for term in OBOParser(obofile):
-		terms.add_term(term)
+		dag.add_term(term)
 	
-	terms.calc_layers()
+	dag.calc_layers()
 
-	for term in terms:
+	for term in dag:
 		if term.level == 2 and not term.obsolete:
 			print "%s\t%s" % (term.ID, term.name)
